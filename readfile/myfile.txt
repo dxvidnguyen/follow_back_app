@@ -1,0 +1,24 @@
+SELECT b.user_id AS user_id, SUM(b.trip_charge) AS total_spent
+FROM (
+SELECT t.user_id,t.trip_id, 
+CASE 
+WHEN t.seconds is NOT NULL THEN CEILING(t.seconds/60)
+WHEN t.seconds is NULL THEN 1440
+END trip_length,
+CASE 
+WHEN t.seconds is NOT NULL THEN 1.00 + 0.15*CEILING(t.seconds/60)
+WHEN t.seconds is NULL THEN 217.00
+END trip_charge
+FROM (
+SELECT s.trip_id, s.user_id, s.time, e.time, 
+CASE 
+WHEN e.time IS NOT NULL THEN EXTRACT(epoch FROM e.time-s.time)
+WHEN e.time is NULL THEN NULL
+END seconds 
+FROM trip_start s
+LEFT JOIN trip_end e on s.trip_id = e.trip_id
+) AS t 
+ORDER BY t.trip_id ASC 
+) AS b
+GROUP BY b.user_id 
+ORDER BY b.user_id ASC;
